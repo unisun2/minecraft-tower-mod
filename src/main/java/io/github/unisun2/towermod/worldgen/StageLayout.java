@@ -3,23 +3,35 @@ package io.github.unisun2.towermod.worldgen;
 /**
  * 스테이지 배치 계산 (마인크래프트 의존성 없는 순수 로직).
  *
- * <p>스테이지는 X축을 따라 일렬로 놓인다. 각 스테이지는 {@code size × size} 블록이며,
+ * <p>스테이지는 X축을 따라 일렬로 놓이고, 스테이지 사이에는 {@code margin} 블록의 빈 공간(마진)이 있다.
  * 0번 스테이지의 중심이 (0, 0)이다.
  * <pre>
- *   stage i : X ∈ [i·size − size/2, i·size + size/2),  Z ∈ [−size/2, size/2)
+ *   period  = size + margin
+ *   stage i : X ∈ [i·period − size/2, i·period + size/2),  Z ∈ [−size/2, size/2)
  * </pre>
- * 기본값 size = 4000 이면 0번은 X −2000..1999, 1번은 X 2000..5999 ...
+ * 기본값(size 4000, margin 100청크 = 1600)이면 0번은 X −2000..1999, 마진 2000..3599, 1번은 X 3600..7599 ...
+ *
+ * <p>size 는 32의 배수, margin 은 16의 배수여야 한다. 그래야 모든 경계가 청크 경계와 일치해서
+ * 한 청크는 항상 한 스테이지(또는 마진)에만 속한다.
  */
 public final class StageLayout {
+	/** 스테이지 밖(마진 또는 전체 영역 밖). */
+	public static final int NONE = -1;
+
 	private final int size;
 	private final int half;
+	private final int margin;
+	private final int period;
 	private final int count;
 
-	public StageLayout(int size, int count) {
-		if (size <= 0) throw new IllegalArgumentException("size must be positive");
-		if (count <= 0) throw new IllegalArgumentException("count must be positive");
+	public StageLayout(int size, int margin, int count) {
+		if (size <= 0 || size % 32 != 0) throw new IllegalArgumentException("size must be a positive multiple of 32: " + size);
+		if (margin < 0 || margin % 16 != 0) throw new IllegalArgumentException("margin must be a non-negative multiple of 16: " + margin);
+		if (count <= 0) throw new IllegalArgumentException("count must be positive: " + count);
 		this.size = size;
 		this.half = size / 2;
+		this.margin = margin;
+		this.period = size + margin;
 		this.count = count;
 	}
 
@@ -27,28 +39,34 @@ public final class StageLayout {
 		return size;
 	}
 
+	public int margin() {
+		return margin;
+	}
+
 	public int count() {
 		return count;
 	}
 
-	/** 블록 X 좌표가 속한 스테이지 번호. 범위를 벗어나면 음수이거나 {@code count} 이상일 수 있다. */
+	/** 블록 X 좌표가 속한 "스테이지 + 뒤따르는 마진" 칸의 번호. 범위를 벗어날 수 있다. */
 	public int rawIndexAt(int blockX) {
-		return Math.floorDiv(blockX + half, size);
+		return Math.floorDiv(blockX + half, period);
 	}
 
-	/** 해당 좌표가 실제 스테이지 영역(4000×4000 칸들의 줄) 안에 있는지. */
-	public boolean contains(int blockX, int blockZ) {
+	/** 블록 좌표가 속한 스테이지 번호, 마진이거나 영역 밖이면 {@link #NONE}. */
+	public int stageAt(int blockX, int blockZ) {
+		if (blockZ < minZ() || blockZ >= maxZ()) return NONE;
 		int index = rawIndexAt(blockX);
-		return index >= 0 && index < count && blockZ >= minZ() && blockZ < maxZ();
+		if (index < 0 || index >= count) return NONE;
+		int local = blockX + half - index * period;
+		return local < size ? index : NONE;
 	}
 
-	/** 범위를 벗어난 번호를 가장 가까운 스테이지로 고정. */
-	public int clampIndex(int index) {
-		return Math.max(0, Math.min(count - 1, index));
+	public boolean contains(int blockX, int blockZ) {
+		return stageAt(blockX, blockZ) != NONE;
 	}
 
 	public int minX(int index) {
-		return index * size - half;
+		return index * period - half;
 	}
 
 	/** 배타적 상한. */
@@ -57,7 +75,7 @@ public final class StageLayout {
 	}
 
 	public int centerX(int index) {
-		return minX(index) + half;
+		return index * period;
 	}
 
 	public int minZ() {
