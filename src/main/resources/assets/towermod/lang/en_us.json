@@ -1,0 +1,7 @@
+{
+	"generator.towermod.stages": "Stages",
+	"commands.towermod.stage.info": "Stage %s/%s [%s] X %s..%s, Z %s..%s (center X %s)",
+	"commands.towermod.stage.outside": "You are outside of every stage.",
+	"commands.towermod.stage.no_such": "Stage %s does not exist (this world has %s stages).",
+	"commands.towermod.stage.not_stage_world": "This dimension does not use stage world generation."
+}

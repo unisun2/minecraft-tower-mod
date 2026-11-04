@@ -1,0 +1,26 @@
+{
+	"schemaVersion": 1,
+	"id": "towermod",
+	"version": "${version}",
+	"name": "Tower Mod",
+	"description": "Stage-based world generation: stages of 1-2 biomes, 4000x4000 blocks each, laid out in a line along the X axis.",
+	"authors": [
+		"unisun2"
+	],
+	"contact": {
+		"sources": "https://github.com/unisun2/minecraft-tower-mod"
+	},
+	"license": "MIT",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"io.github.unisun2.towermod.TowerMod"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

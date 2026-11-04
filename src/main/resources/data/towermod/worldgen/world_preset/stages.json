@@ -1,0 +1,47 @@
+{
+	"dimensions": {
+		"minecraft:overworld": {
+			"type": "minecraft:overworld",
+			"generator": {
+				"type": "minecraft:noise",
+				"settings": "minecraft:overworld",
+				"biome_source": {
+					"type": "towermod:stages",
+					"stage_size": 4000,
+					"blend_scale": 384,
+					"stages": [
+						{ "biomes": ["minecraft:plains"] },
+						{ "biomes": ["minecraft:forest", "minecraft:birch_forest"] },
+						{ "biomes": ["minecraft:desert", "minecraft:badlands"] },
+						{ "biomes": ["minecraft:swamp", "minecraft:mangrove_swamp"] },
+						{ "biomes": ["minecraft:jungle", "minecraft:bamboo_jungle"] },
+						{ "biomes": ["minecraft:dark_forest"] },
+						{ "biomes": ["minecraft:snowy_plains", "minecraft:ice_spikes"] },
+						{ "biomes": ["minecraft:cherry_grove", "minecraft:meadow"] }
+					]
+				}
+			}
+		},
+		"minecraft:the_nether": {
+			"type": "minecraft:the_nether",
+			"generator": {
+				"type": "minecraft:noise",
+				"settings": "minecraft:nether",
+				"biome_source": {
+					"type": "minecraft:multi_noise",
+					"preset": "minecraft:nether"
+				}
+			}
+		},
+		"minecraft:the_end": {
+			"type": "minecraft:the_end",
+			"generator": {
+				"type": "minecraft:noise",
+				"settings": "minecraft:end",
+				"biome_source": {
+					"type": "minecraft:the_end"
+				}
+			}
+		}
+	}
+}
