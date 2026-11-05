@@ -14,7 +14,8 @@ import java.util.function.ToDoubleFunction;
  *   <li>해안을 뺀 모든 바이옴은 정확히 한 번씩 쓰인다.</li>
  *   <li>육지·네더·엔드는 같은 분류끼리 둘씩 짝짓는다 (개수가 홀수면 하나는 단독 스테이지).</li>
  *   <li>바다는 하나씩 해안과 짝짓는다. 해안은 온도가 가까운 것 중에서 고르며 중복될 수 있다.</li>
- *   <li>0번 스테이지(스폰)는 항상 육지 스테이지이고, 나머지 순서는 시드에 따라 섞는다.</li>
+ *   <li>순서는 육지 → 바다 → 네더 → 엔드로 고정. 각 묶음 안의 순서와 짝은 시드에 따라 섞는다
+ *       (그래서 0번 스테이지 = 스폰은 항상 육지).</li>
  * </ul>
  * 같은 시드와 같은 입력이면 항상 같은 결과가 나온다.
  */
@@ -49,17 +50,11 @@ public final class StagePlanner {
 					: new Planned<>(List.of(sea, pickCoast(sea, coasts, temperature, random)), StageCategory.OCEAN));
 		}
 
-		List<Planned<T>> result = new ArrayList<>();
-		if (!land.isEmpty()) {
-			result.add(land.removeFirst());
-		}
-		List<Planned<T>> rest = new ArrayList<>();
-		rest.addAll(land);
-		rest.addAll(ocean);
-		rest.addAll(nether);
-		rest.addAll(end);
-		Collections.shuffle(rest, random);
-		result.addAll(rest);
+		List<Planned<T>> result = new ArrayList<>(land.size() + ocean.size() + nether.size() + end.size());
+		result.addAll(land);
+		result.addAll(ocean);
+		result.addAll(nether);
+		result.addAll(end);
 		return result;
 	}
 
