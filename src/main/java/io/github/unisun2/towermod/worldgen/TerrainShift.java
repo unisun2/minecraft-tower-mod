@@ -11,6 +11,7 @@ import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.DensityFunctions;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.NoiseRouter;
+import net.minecraft.world.level.levelgen.NoiseSettings;
 import net.minecraft.world.level.levelgen.SurfaceRules;
 
 /**
@@ -28,16 +29,30 @@ final class TerrainShift {
 	private TerrainShift() {
 	}
 
-	static NoiseGeneratorSettings shift(NoiseGeneratorSettings settings, int dy) {
-		if (dy == 0) return settings;
+	/**
+	 * @param terrainDy 지형(밀도 기울기, 지표 규칙 높이)을 옮길 양
+	 * @param seaDy     해수면을 옮길 양
+	 */
+	static NoiseGeneratorSettings shift(NoiseGeneratorSettings settings, int terrainDy, int seaDy) {
+		if (terrainDy == 0 && seaDy == 0) return settings;
 
-		NoiseRouter router = settings.noiseRouter().mapAll(function -> shiftGradient(function, dy));
-		SurfaceRules.RuleSource surface = shiftSurfaceRule(settings.surfaceRule(), dy);
-		// 해수면이 월드 바닥 이하이면(floating_islands 등) "바다 없음"이라는 뜻이라 그대로 둔다.
-		int seaLevel = settings.seaLevel() > settings.noiseSettings().minY() ? settings.seaLevel() + dy : settings.seaLevel();
+		NoiseRouter router = terrainDy == 0 ? settings.noiseRouter()
+				: settings.noiseRouter().mapAll(function -> shiftGradient(function, terrainDy));
+		SurfaceRules.RuleSource surface = terrainDy == 0 ? settings.surfaceRule()
+				: shiftSurfaceRule(settings.surfaceRule(), terrainDy);
+		// 해수면이 생성 바닥 이하이면(end, floating_islands 등) "바다 없음"이라는 뜻이라 그대로 둔다.
+		int seaLevel = settings.seaLevel() > settings.noiseSettings().minY() ? settings.seaLevel() + seaDy : settings.seaLevel();
+
+		// 지형을 올리면 생성 범위 위쪽도 늘려서 천장/윗면이 잘리지 않게 한다 (월드 높이로 다시 잘림).
+		NoiseSettings noise = settings.noiseSettings();
+		int extra = Math.max(0, Math.max(terrainDy, seaDy));
+		extra = (extra + 15) / 16 * 16;
+		if (extra > 0) {
+			noise = new NoiseSettings(noise.minY(), noise.height() + extra, noise.noiseSizeHorizontal(), noise.noiseSizeVertical());
+		}
 
 		return new NoiseGeneratorSettings(
-				settings.noiseSettings(),
+				noise,
 				settings.defaultBlock(),
 				settings.defaultFluid(),
 				router,

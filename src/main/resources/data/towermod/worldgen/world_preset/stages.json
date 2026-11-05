@@ -16,16 +16,13 @@
 					"top_block": { "Name": "minecraft:sand" },
 					"fluid": { "Name": "minecraft:water", "Properties": { "level": "0" } }
 				},
-				"stages": [
-					{ "biomes": ["minecraft:plains"],                                  "noise_settings": "minecraft:overworld" },
-					{ "biomes": ["minecraft:forest", "minecraft:birch_forest"],        "noise_settings": "minecraft:overworld" },
-					{ "biomes": ["minecraft:desert", "minecraft:badlands"],            "noise_settings": "minecraft:large_biomes" },
-					{ "biomes": ["minecraft:swamp", "minecraft:mangrove_swamp"],       "noise_settings": "minecraft:overworld" },
-					{ "biomes": ["minecraft:jungle", "minecraft:bamboo_jungle"],       "noise_settings": "minecraft:amplified" },
-					{ "biomes": ["minecraft:dark_forest"],                             "noise_settings": "minecraft:large_biomes" },
-					{ "biomes": ["minecraft:snowy_plains", "minecraft:ice_spikes"],    "noise_settings": "minecraft:amplified" },
-					{ "biomes": ["minecraft:cherry_grove", "minecraft:meadow"],        "noise_settings": "minecraft:large_biomes" }
-				]
+				"stages": {
+					"land_terrain": ["minecraft:overworld", "minecraft:large_biomes", "minecraft:amplified"],
+					"ocean_terrain": "minecraft:overworld",
+					"ocean_terrain_offset": -40,
+					"nether_terrain": "minecraft:nether",
+					"end_terrain": "minecraft:end"
+				}
 			}
 		},
 		"minecraft:the_nether": {

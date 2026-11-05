@@ -1,9 +1,6 @@
 package io.github.unisun2.towermod.worldgen;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.List;
 import java.util.stream.Stream;
 import net.minecraft.core.Holder;
@@ -14,7 +11,8 @@ import net.minecraft.world.level.biome.Climate;
 
 /**
  * X축으로 일렬로 이어지는 스테이지들에 바이옴을 배치하는 BiomeSource.
- * 보통은 {@link StageChunkGenerator}가 내부에서 만들어 쓴다 (같은 필드를 공유).
+ * 설정은 모두 {@link StageChunkGenerator}가 가지고 있고, 이 클래스는 그 생성기가 만들어 쓰는 "보기"다.
+ * 스테이지 목록은 시드가 정해진 뒤({@code createState}) 생성기가 {@link #bind}로 넘겨준다.
  *
  * <ul>
  *   <li>바이옴 1개 스테이지: 스테이지 전체가 그 바이옴.</li>
@@ -22,47 +20,36 @@ import net.minecraft.world.level.biome.Climate;
  *   <li>마진과 스테이지 영역 밖: {@code margin_biome} (기본 deep_ocean).</li>
  * </ul>
  *
- * 바이옴은 높이(Y)와 무관하게 결정되므로 동굴 바이옴(lush_caves 등)은 따로 생기지 않는다.
+ * 바이옴은 높이(Y)와 무관하게 결정되므로 동굴 바이옴도 지표에 그대로 깔린다.
  */
 public class StageBiomeSource extends BiomeSource {
-	public static final int DEFAULT_STAGE_SIZE = 4000;
-	public static final int DEFAULT_MARGIN_CHUNKS = 100;
-	public static final int DEFAULT_BLEND_SCALE = 384;
-
-	public static final MapCodec<StageBiomeSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-			Codec.intRange(64, 1 << 20).validate(StageBiomeSource::checkStageSize)
-					.optionalFieldOf("stage_size", DEFAULT_STAGE_SIZE)
-					.forGetter(StageBiomeSource::stageSize),
-			Codec.intRange(0, 1 << 16).optionalFieldOf("margin_chunks", DEFAULT_MARGIN_CHUNKS)
-					.forGetter(StageBiomeSource::marginChunks),
-			Codec.intRange(16, 1 << 16).optionalFieldOf("blend_scale", DEFAULT_BLEND_SCALE)
-					.forGetter(StageBiomeSource::blendScale),
-			Stage.CODEC.listOf().validate(StageBiomeSource::checkStages).fieldOf("stages")
-					.forGetter(StageBiomeSource::stages),
-			Biome.CODEC.fieldOf("margin_biome")
-					.forGetter(StageBiomeSource::marginBiome)
-	).apply(instance, StageBiomeSource::new));
+	/** 단독으로 쓰일 때는 생성기 설정을 그대로 읽는다. */
+	public static final MapCodec<StageBiomeSource> CODEC =
+			StageChunkGenerator.CODEC.xmap(StageChunkGenerator::stageBiomeSource, StageBiomeSource::generator);
 
 	private final int blendScale;
-	private final List<Stage> stages;
 	private final Holder<Biome> marginBiome;
-	private final StageLayout layout;
+	private StageChunkGenerator generator;
+	private volatile Bound bound;
 
-	public StageBiomeSource(int stageSize, int marginChunks, int blendScale, List<Stage> stages, Holder<Biome> marginBiome) {
+	private record Bound(StageLayout layout, List<Stage> stages) {
+	}
+
+	StageBiomeSource(int blendScale, Holder<Biome> marginBiome) {
 		this.blendScale = blendScale;
-		this.stages = List.copyOf(stages);
 		this.marginBiome = marginBiome;
-		this.layout = new StageLayout(stageSize, marginChunks * 16, this.stages.size());
 	}
 
-	private static DataResult<Integer> checkStageSize(int size) {
-		return size % 32 == 0
-				? DataResult.success(size)
-				: DataResult.error(() -> "stage_size must be a multiple of 32 (chunk aligned), got " + size);
+	void attach(StageChunkGenerator generator) {
+		this.generator = generator;
 	}
 
-	private static DataResult<List<Stage>> checkStages(List<Stage> stages) {
-		return stages.isEmpty() ? DataResult.error(() -> "At least one stage is required") : DataResult.success(stages);
+	void bind(StageLayout layout, List<Stage> stages) {
+		this.bound = new Bound(layout, List.copyOf(stages));
+	}
+
+	public StageChunkGenerator generator() {
+		return generator;
 	}
 
 	@Override
@@ -72,51 +59,40 @@ public class StageBiomeSource extends BiomeSource {
 
 	@Override
 	protected Stream<Holder<Biome>> collectPossibleBiomes() {
-		return Stream.concat(
-				stages.stream().flatMap(stage -> stage.biomes().stream()),
-				Stream.of(marginBiome)
-		).distinct();
+		Bound current = bound;
+		Stream<Holder<Biome>> stageBiomes = current != null
+				? current.stages().stream().flatMap(stage -> stage.biomes().stream())
+				: generator.candidateBiomes();
+		return Stream.concat(stageBiomes, Stream.of(marginBiome)).distinct();
 	}
 
 	/** x, y, z 는 쿼트 좌표(블록 >> 2). */
 	@Override
 	public Holder<Biome> getNoiseBiome(int x, int y, int z, Climate.Sampler sampler) {
+		Bound current = bound;
+		if (current == null) {
+			return marginBiome; // 시드가 정해지기 전에는 스테이지가 없다
+		}
+
 		int blockX = QuartPos.toBlock(x);
 		int blockZ = QuartPos.toBlock(z);
-
-		int index = layout.stageAt(blockX, blockZ);
+		int index = current.layout().stageAt(blockX, blockZ);
 		if (index == StageLayout.NONE) {
 			return marginBiome;
 		}
 
-		List<Holder<Biome>> biomes = stages.get(index).biomes();
+		List<Holder<Biome>> biomes = current.stages().get(index).biomes();
 		if (biomes.size() == 1) {
 			return biomes.getFirst();
 		}
 		return StageLayout.splitNoise(index, blockX, blockZ, blendScale) < 0.0 ? biomes.get(0) : biomes.get(1);
 	}
 
-	public int stageSize() {
-		return layout.size();
-	}
-
-	public int marginChunks() {
-		return layout.margin() / 16;
-	}
-
 	public int blendScale() {
 		return blendScale;
 	}
 
-	public List<Stage> stages() {
-		return stages;
-	}
-
 	public Holder<Biome> marginBiome() {
 		return marginBiome;
-	}
-
-	public StageLayout layout() {
-		return layout;
 	}
 }

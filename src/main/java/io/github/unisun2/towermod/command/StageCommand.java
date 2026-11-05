@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import io.github.unisun2.towermod.worldgen.Stage;
 import io.github.unisun2.towermod.worldgen.StageChunkGenerator;
 import io.github.unisun2.towermod.worldgen.StageLayout;
+import java.util.List;
 import java.util.stream.Collectors;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.CommandSourceStack;
@@ -18,6 +19,7 @@ import net.minecraft.world.phys.Vec3;
 /**
  * /stage          현재 위치의 스테이지 정보
  * /stage <번호>   해당 스테이지의 범위, 중심 좌표, 바이옴, 지형 설정
+ * /stage list     모든 스테이지의 바이옴 목록
  */
 public final class StageCommand {
 	private StageCommand() {
@@ -30,6 +32,7 @@ public final class StageCommand {
 	private static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
 		dispatcher.register(Commands.literal("stage")
 				.executes(ctx -> current(ctx.getSource()))
+				.then(Commands.literal("list").executes(ctx -> list(ctx.getSource())))
 				.then(Commands.argument("index", IntegerArgumentType.integer(0))
 						.executes(ctx -> describe(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "index")))));
 	}
@@ -57,7 +60,7 @@ public final class StageCommand {
 			return 0;
 		}
 
-		Stage stage = generator.stageBiomeSource().stages().get(index);
+		Stage stage = generator.stages().get(index);
 		String biomes = stage.biomes().stream().map(Holder::getRegisteredName).collect(Collectors.joining(", "));
 		String terrain = stage.noiseSettings().getRegisteredName();
 		source.sendSuccess(() -> Component.translatable("commands.towermod.stage.info",
@@ -67,9 +70,22 @@ public final class StageCommand {
 		return index + 1;
 	}
 
+	private static int list(CommandSourceStack source) {
+		StageChunkGenerator generator = stageGenerator(source);
+		if (generator == null) return 0;
+
+		List<Stage> stages = generator.stages();
+		for (int i = 0; i < stages.size(); i++) {
+			int index = i;
+			String biomes = stages.get(i).biomes().stream().map(Holder::getRegisteredName).collect(Collectors.joining(", "));
+			source.sendSuccess(() -> Component.literal(index + ": " + biomes), false);
+		}
+		return stages.size();
+	}
+
 	private static StageChunkGenerator stageGenerator(CommandSourceStack source) {
 		ChunkGenerator generator = source.getLevel().getChunkSource().getGenerator();
-		if (generator instanceof StageChunkGenerator stageGenerator) {
+		if (generator instanceof StageChunkGenerator stageGenerator && stageGenerator.isResolved()) {
 			return stageGenerator;
 		}
 		source.sendFailure(Component.translatable("commands.towermod.stage.not_stage_world"));
