@@ -19,7 +19,7 @@ import net.minecraft.world.level.biome.Climate;
  * <ul>
  *   <li>바이옴 1개 스테이지: 스테이지 전체가 그 바이옴.</li>
  *   <li>바이옴 2개 스테이지: 노이즈로 경계가 구불구불하게 두 바이옴이 나뉜다.</li>
- *   <li>마진과 스테이지 영역 밖: {@code margin_biome}.</li>
+ *   <li>마진과 스테이지 영역 밖: {@code margin_biome} (기본 deep_ocean).</li>
  * </ul>
  *
  * 바이옴은 높이(Y)와 무관하게 결정되므로 동굴 바이옴(lush_caves 등)은 따로 생기지 않는다.

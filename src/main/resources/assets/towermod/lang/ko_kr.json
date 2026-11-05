@@ -1,7 +1,7 @@
 {
 	"generator.towermod.stages": "스테이지",
 	"commands.towermod.stage.info": "스테이지 %s/%s [%s] 지형 %s | X %s..%s, Z %s..%s (중심 X %s)",
-	"commands.towermod.stage.outside": "스테이지 사이 마진 구역에 있습니다.",
+	"commands.towermod.stage.outside": "스테이지 바깥(바다)에 있습니다.",
 	"commands.towermod.stage.no_such": "스테이지 %s번은 없습니다 (이 월드의 스테이지 수: %s).",
 	"commands.towermod.stage.not_stage_world": "이 차원은 스테이지 월드 생성을 사용하지 않습니다."
 }

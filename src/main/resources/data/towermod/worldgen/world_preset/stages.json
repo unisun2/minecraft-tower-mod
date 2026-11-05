@@ -7,14 +7,22 @@
 				"stage_size": 4000,
 				"margin_chunks": 100,
 				"blend_scale": 384,
-				"margin_biome": "minecraft:the_void",
+				"stage_height_offset": 32,
+				"margin_biome": "minecraft:deep_ocean",
+				"outside": {
+					"water_level": 88,
+					"floor_y": 56,
+					"block": { "Name": "minecraft:stone" },
+					"top_block": { "Name": "minecraft:sand" },
+					"fluid": { "Name": "minecraft:water", "Properties": { "level": "0" } }
+				},
 				"stages": [
 					{ "biomes": ["minecraft:plains"],                                  "noise_settings": "minecraft:overworld" },
 					{ "biomes": ["minecraft:forest", "minecraft:birch_forest"],        "noise_settings": "minecraft:overworld" },
 					{ "biomes": ["minecraft:desert", "minecraft:badlands"],            "noise_settings": "minecraft:large_biomes" },
 					{ "biomes": ["minecraft:swamp", "minecraft:mangrove_swamp"],       "noise_settings": "minecraft:overworld" },
 					{ "biomes": ["minecraft:jungle", "minecraft:bamboo_jungle"],       "noise_settings": "minecraft:amplified" },
-					{ "biomes": ["minecraft:dark_forest"],                             "noise_settings": "minecraft:floating_islands" },
+					{ "biomes": ["minecraft:dark_forest"],                             "noise_settings": "minecraft:large_biomes" },
 					{ "biomes": ["minecraft:snowy_plains", "minecraft:ice_spikes"],    "noise_settings": "minecraft:amplified" },
 					{ "biomes": ["minecraft:cherry_grove", "minecraft:meadow"],        "noise_settings": "minecraft:large_biomes" }
 				]
